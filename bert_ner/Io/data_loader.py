@@ -16,6 +16,7 @@ def init_params():
         raise ValueError("Task not found: %s" % (task_name))
     processor = processors[task_name]()
     tokenizer = BertTokenizer(vocab_file=args.VOCAB_FILE)
+    tokenizer.save_vocabulary(args.output_dir)  # 保存词表文件
     return processor, tokenizer
 
 

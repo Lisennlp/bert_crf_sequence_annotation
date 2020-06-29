@@ -4,10 +4,11 @@ from net.bert_ner import Bert_CRF
 import config.args as args
 
 
-def save_model(model, output_dir):
+def save_model(model, output_dir, step, f_1):
+    f_1 = round(f_1, 3)
     model_to_save = model.module if hasattr(model,
                                             'module') else model    # Only save the model it-self
-    output_model_file = os.path.join(output_dir, "pytorch_model.bin")
+    output_model_file = os.path.join(output_dir, f"pytorch_model_{f_1}_{step}.bin")
     torch.save(model_to_save.state_dict(), output_model_file)
 
 

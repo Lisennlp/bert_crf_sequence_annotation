@@ -1,8 +1,10 @@
 import time
-import torch
 import warnings
-from pytorch_pretrained_bert.optimization import BertAdam
+import os
 
+import torch
+
+from pytorch_pretrained_bert.optimization import BertAdam
 import config.args as args
 from util.plot_util import loss_acc_plot
 from util.Logginger import init_logger
@@ -13,6 +15,9 @@ torch.manual_seed(args.seed)
 torch.cuda.manual_seed(args.seed)
 torch.cuda.manual_seed_all(args.seed)
 warnings.filterwarnings('ignore')
+
+WEIGHTS_NAME = 'pytorch_model.bin'
+CONFIG_NAME = 'bert_config.json'
 
 
 def warmup_linear(x, warmup=0.002):
@@ -93,7 +98,6 @@ def fit(model, training_iter, eval_iter, num_epoch, pbar, num_train_steps, verbo
     }
 
     # ------------------------训练------------------------------
-    best_f1 = 0
     start = time.time()
     global_step = 0
 
@@ -164,10 +168,11 @@ def fit(model, training_iter, eval_iter, num_epoch, pbar, num_train_steps, verbo
                 %
                 (e + 1, train_loss.item(), eval_loss.item() / count, train_acc, eval_acc, eval_f1))
 
-            # 保存最好的模型
-            if eval_f1 > best_f1:
-                best_f1 = eval_f1
-                save_model(model, args.output_dir)
+            save_model(model, args.output_dir, step=e, f_1=eval_f1)  # 所有模型都保存
+
+            if e == 0:
+                output_config_file = os.path.join(args.output_dir, CONFIG_NAME)
+                model_module.config.to_json_file(output_config_file)
 
             if e % verbose == 0:
                 train_losses.append(train_loss.item())
