@@ -131,9 +131,10 @@ def fit(model, training_iter, eval_iter, num_epoch, pbar, num_train_steps, verbo
             label_ids = label_ids.view(1, -1)
             label_ids = label_ids[label_ids != -1]
             label_ids = label_ids.cpu()
+            if len(predicts) != len(label_ids):
+                continue
             train_acc, f1 = model_module.acc_f1(predicts, label_ids)    # lsp: 每一步的准确率情况
             pbar.show_process(train_acc, train_loss.item(), f1, time.time() - start, step)
-
 
 # -----------------------验证----------------------------
         model.eval()

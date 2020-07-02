@@ -120,6 +120,45 @@ def produce_data(custom_vocab=False, stop_word_list=None, vocab_size=None):
         logger.info('Dev set write done')
 
 
+def produce_cws_data(read_path, save_path):
+    """BMES标签"""
+
+    with open(os.path.join(read_path), 'r') as fr, open(save_path, 'w') as fw:
+        for line in fr:
+            line = line.strip('\n').replace('  ', ' ')
+            sentence_tags, sentence_words, sentence_dict = [], [], {}
+            for word in line.split(' '):
+                tags, words = [], []
+                if len(word) == 1:
+                    tags.append('S')
+                    words.append(word)
+                else:
+                    for i, zi in enumerate(word):
+                        if i == 0:
+                            tag = 'B'
+                        elif i == len(word) - 1:
+                            tag = 'E'
+                        else:
+                            tag = 'M'
+                        tags.append(tag)
+                        words.append(zi)
+                    
+                sentence_tags.extend(tags)
+                sentence_words.extend(words)
+
+            # print(sentence_tags)
+            # print(sentence_words)
+
+            sentence_tags_str = ' '.join(sentence_tags)
+            sentence_words_str = ' '.join(sentence_words)
+            assert len(sentence_tags) == len(sentence_words)
+
+            sentence_dict['source'] = sentence_words_str
+            sentence_dict['target'] = sentence_tags_str
+
+            fw.write(f'{json.dumps(sentence_dict, ensure_ascii=False)}\n')
+
+
 class InputExample(object):
 
     def __init__(self, guid, text_a, text_b=None, label=None):
@@ -181,7 +220,12 @@ class MyPro(DataProcessor):
             line = json.loads(line)
             text_a = line["source"]
             label = line["target"]
-            assert len(label.split()) == len(text_a.split())
+            try:
+                assert len(label.split()) == len(text_a.split())
+            except:
+                print(f'{label.split()}, {len(label.split())}')
+                print(f'{text_a.split()}, {len(text_a.split())}')
+                continue
             example = InputExample(guid=guid, text_a=text_a, label=label)
             examples.append(example)
         return examples
