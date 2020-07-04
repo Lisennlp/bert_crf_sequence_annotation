@@ -37,7 +37,7 @@
 
 ### 词性训练数据样例
 
-      data/npostag_data/    
+      data/postag_data/    
 
 
 ### 词性标注符号：
