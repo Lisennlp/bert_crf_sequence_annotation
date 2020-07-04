@@ -1,156 +1,8 @@
-import os
 import json
-import random
-from collections import Counter
-from tqdm import tqdm
 from util.Logginger import init_logger
 import config.args as args
-import operator
 
 logger = init_logger("model_net", logging_path=args.log_path)
-
-
-def train_val_split(X, y, valid_size=0.2, random_state=2018, shuffle=True):
-    """
-    训练集验证集分割
-    :param X: sentences
-    :param y: labels
-    :param random_state: 随机种子
-    """
-    logger.info('Train val split')
-
-    data = []
-    for data_x, data_y in tqdm(zip(X, y), desc='Merge'):
-        data.append((data_x, data_y))
-    del X, y
-
-    N = len(data)
-    test_size = int(N * valid_size)
-
-    if shuffle:
-        random.seed(random_state)
-        random.shuffle(data)
-
-    valid = data[:test_size]
-    train = data[test_size:]
-
-    return train, valid
-
-
-def sent2char(line):
-    """
-    句子处理成单词
-    :param line: 原始行
-    :return: 单词， 标签
-    """
-    res = line.strip('\n').split()
-    return res
-
-
-def bulid_vocab(vocab_size, min_freq=1, stop_word_list=None):
-    """
-    建立词典
-    :param vocab_size: 词典大小
-    :param min_freq: 最小词频限制
-    :param stop_list: 停用词 @type：file_path
-    :return: vocab
-    """
-    count = Counter()
-
-    with open(os.path.join(args.ROOT_DIR, args.RAW_SOURCE_DATA), 'r') as fr:
-        logger.info('Building vocab')
-        for line in tqdm(fr, desc='Build vocab'):
-            words, label = sent2char(line)
-            count.update(words)
-
-    if stop_word_list:
-        stop_list = {}
-        with open(os.path.join(args.ROOT_DIR, args.STOP_WORD_LIST), 'r') as fr:
-            for i, line in enumerate(fr):
-                word = line.strip('\n')
-                if stop_list.get(word) is None:
-                    stop_list[word] = i
-        count = {k: v for k, v in count.items() if k not in stop_list}
-    count = sorted(count.items(), key=operator.itemgetter(1))
-    # 词典
-    vocab = [w[0] for w in count if w[1] >= min_freq]
-    if vocab_size - 3 < len(vocab):
-        vocab = vocab[:vocab_size - 3]
-    vocab = args.flag_words + vocab
-    assert vocab[0] == "[PAD]", ("[PAD] is not at the first position of vocab")
-    logger.info('Vocab_size is %d' % len(vocab))
-
-    with open(args.VOCAB_FILE, 'w') as fw:
-        for w in vocab:
-            fw.write(w + '\n')
-    logger.info("Vocab.txt write down at {}".format(args.VOCAB_FILE))
-
-
-def produce_ner_data(custom_vocab=False, stop_word_list=None, vocab_size=None):
-    """实际情况下，train和valid通常是需要自己划分的，这里将train和valid数据集划分好写入文件"""
-    targets, sentences = [], []
-    with open(os.path.join(args.ROOT_DIR, args.RAW_SOURCE_DATA), 'r') as fr_1, \
-            open(os.path.join(args.ROOT_DIR, args.RAW_TARGET_DATA), 'r') as fr_2:
-        for sent, target in tqdm(zip(fr_1, fr_2), desc='text_to_id'):
-            chars = sent2char(sent)
-            label = sent2char(target)
-
-            targets.append(label)
-            sentences.append(chars)
-            if custom_vocab:
-                bulid_vocab(vocab_size, stop_word_list)
-    train, valid = train_val_split(sentences, targets)
-
-    with open(args.TRAIN_PATH, 'w') as fw:
-        for sent, label in train:
-            sent = ' '.join([str(w) for w in sent])
-            label = ' '.join([str(l) for l in label])
-            df = {"source": sent, "target": label}
-            encode_json = json.dumps(df)
-            print(encode_json, file=fw)
-        logger.info('Train set write done')
-
-    with open(args.VALID_PATH, 'w') as fw:
-        for sent, label in valid:
-            sent = ' '.join([str(w) for w in sent])
-            label = ' '.join([str(l) for l in label])
-            df = {"source": sent, "target": label}
-            encode_json = json.dumps(df)
-            print(encode_json, file=fw)
-        logger.info('Dev set write done')
-
-
-def produce_cws_data(read_path, save_path):
-    """BMES标签"""
-
-    with open(os.path.join(read_path), 'r') as fr, open(save_path, 'w') as fw:
-        for line in fr:
-            line = line.strip('\n').replace('  ', ' ')
-            sentence_tags, sentence_words, sentence_dict = [], [], {}
-            for word in line.split(' '):
-                tags, words = [], []
-                if len(word) == 1:
-                    tags.append('S')
-                    words.append(word)
-                else:
-                    for i, zi in enumerate(word):
-                        if i == 0:
-                            tag = 'B'
-                        elif i == len(word) - 1:
-                            tag = 'E'
-                        else:
-                            tag = 'M'
-                        tags.append(tag)
-                        words.append(zi)
-                sentence_tags.extend(tags)
-                sentence_words.extend(words)
-            sentence_tags_str = ' '.join(sentence_tags)
-            sentence_words_str = ' '.join(sentence_words)
-            assert len(sentence_tags) == len(sentence_words)
-
-            sentence_dict['source'] = sentence_words_str
-            sentence_dict['target'] = sentence_tags_str
-            fw.write(f'{json.dumps(sentence_dict, ensure_ascii=False)}\n')
 
 
 class InputExample(object):
@@ -274,7 +126,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
 
         # ---------------处理target----------------
         ## Notes: label_id中不包括[CLS]和[SEP]
-        label_id = [label_map[l] for l in labels]
+        label_id = [label_map.get(l) if label_map.get(l) else label_map.get('UNK') for l in labels]
         label_padding = [-1] * (max_seq_length - len(label_id))
         label_id += label_padding
 
