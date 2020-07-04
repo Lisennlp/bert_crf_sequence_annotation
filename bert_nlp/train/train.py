@@ -157,6 +157,8 @@ def fit(model, training_iter, eval_iter, num_epoch, pbar, num_train_steps, verbo
                 label_ids = label_ids.view(1, -1)
                 label_ids = label_ids[label_ids != -1]
                 y_labels.append(label_ids)
+                if len(predicts) != len(label_ids):
+                    continue
 
             eval_predicted = torch.cat(y_predicts, dim=0).cpu()
             eval_labeled = torch.cat(y_labels, dim=0).cpu()
