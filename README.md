@@ -1,5 +1,5 @@
 # 项目说明
-本项目是基于bert+crf 做的一个NLP序列标注（目前支持分词和实体识别训练，后续会加入其他的任务）模型，项目是基于https://github.com/circlePi/Bert_Chinese_Ner_pytorch
+本项目是基于bert+crf 做的一个NLP序列标注（目前支持分词，词性标注和实体识别训练，后续会加入其他的任务）模型，项目是基于https://github.com/circlePi/Bert_Chinese_Ner_pytorch
 （在此感谢原作者的贡献）进行修改的。在原项目的基础上，加入了多卡训练，同时支持单卡和多卡模式，去掉了一些不必要的code，比如output_mask的形式。此外，加入了分词等nlp任务。
 
 
