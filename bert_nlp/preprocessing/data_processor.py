@@ -126,7 +126,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
 
         # ---------------处理target----------------
         ## Notes: label_id中不包括[CLS]和[SEP]
-        label_id = [label_map.get(l) if label_map.get(l) else label_map.get('UNK') for l in labels]
+        label_id = [label_map.get(l, len(label_map) - 1) for l in labels]
         label_padding = [-1] * (max_seq_length - len(label_id))
         label_id += label_padding
 
