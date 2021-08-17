@@ -152,13 +152,13 @@ def fit(model, training_iter, eval_iter, num_epoch, pbar, num_train_steps, verbo
                 eval_loss = eval_los + eval_loss
                 count += 1
                 predicts = model_module.predict(bert_encode, output_mask)
-                y_predicts.append(predicts)
-
                 label_ids = label_ids.view(1, -1)
                 label_ids = label_ids[label_ids != -1]
-                y_labels.append(label_ids)
                 if len(predicts) != len(label_ids):
                     continue
+                y_predicts.append(predicts)
+                y_labels.append(label_ids)
+                
 
             eval_predicted = torch.cat(y_predicts, dim=0).cpu()
             eval_labeled = torch.cat(y_labels, dim=0).cpu()
